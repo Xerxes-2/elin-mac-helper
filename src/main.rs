@@ -7,7 +7,8 @@ fn handle_event(event: notify::Event, path: &std::path::Path) -> Result<()> {
     if event.need_rescan() {
         warn!("Some events may be lost.");
     }
-    let event_path = event.paths.get(0).context("No path")?.strip_prefix(path)?;
+    let event_path = event.paths.get(0).context("No path")?;
+    let event_path = event_path.strip_prefix(path).unwrap_or(event_path);
     let event_path_parent = event_path.parent().context("No parent")?;
     if event.kind.is_remove() {
         warn!("Removed: {:?}", event_path);
@@ -31,6 +32,8 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let target = args.get(1).map(|s| s.as_str()).unwrap_or(".");
     let full_path = std::path::Path::new(target);
+    let full_path = full_path.canonicalize()?;
+    let full_path = full_path.as_path();
     // change to target directory
     std::env::set_current_dir(full_path)?;
     let path = std::path::Path::new(".");
